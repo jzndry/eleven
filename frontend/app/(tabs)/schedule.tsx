@@ -44,7 +44,7 @@ export default function ScheduleScreen() {
   const renderEvent = ({ item }: { item: any }) => (
     <TouchableOpacity 
       onPress={() => router.push(`/event-review/${item.id}`)}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
       className="bg-white p-5 mb-4 rounded-3xl shadow-sm border border-slate-100"
     >
       <View className="flex-row justify-between items-center mb-2">
