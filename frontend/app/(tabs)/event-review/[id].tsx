@@ -1,30 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, DimensionValue } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Pressable, 
+  ActivityIndicator, 
+  DimensionValue, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  Alert,
+  KeyboardAvoidingView, 
+  Platform,
+} from 'react-native';
+import { SymbolView } from 'expo-symbols';
 import { useLocalSearchParams } from 'expo-router';
-
-// IMPORTANT: Adjust this path to wherever your Supabase client is initialised!
 import { supabase } from '../../../lib/supabase'; 
 import Slider from '@react-native-community/slider';
 
 export default function EventHubScreen() {
   const { id } = useLocalSearchParams();
-  const eventId = typeof id === 'string' ? id : id[0]; // Ensure it's a string for Supabase
+  const eventId = typeof id === 'string' ? id : id[0];
+  const [isSubmitted, setIsSubmitted] = useState(false);
   
   // 1. Core UI State
   const [activeTab, setActiveTab] = useState('attendance'); 
   const [isLoading, setIsLoading] = useState(true);
   
-  // 2. Live Supabase Data State
+  // 2. Data State
   const [currentUserRole, setCurrentUserRole] = useState<'player' | 'coach' | null>(null);
   const [eventDate, setEventDate] = useState<Date | null>(null);
   const [hasEventPassed, setHasEventPassed] = useState(false);
-
-  // 3. Attendance Data State
   const [attendanceStats, setAttendanceStats] = useState({ attending: 0, declined: 0, no_response: 0, total: 0 });
   const [playerStatus, setPlayerStatus] = useState<string | null>(null); 
 
-  // --- SUPABASE DATA FETCHING ---
-  
+  // 3. Review Form State
+  const [reviewForm, setReviewForm] = useState({
+    team_play: 5,
+    personal_perf: 5,
+    improvements: '',
+    comments: ''
+  });
+
   useEffect(() => {
     if (eventId) fetchHubData();
   }, [eventId]);
@@ -32,11 +49,9 @@ export default function EventHubScreen() {
   async function fetchHubData() {
     setIsLoading(true);
     try {
-      // 1. Get the current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 2. Fetch their role from profiles
       const { data: profile } = await supabase
         .from('profiles')
         .select('role, team_id')
@@ -45,7 +60,6 @@ export default function EventHubScreen() {
 
       if (profile) setCurrentUserRole(profile.role as 'player' | 'coach');
 
-      // 3. Fetch Event details
       const { data: event } = await supabase
         .from('events')
         .select('*')
@@ -57,7 +71,6 @@ export default function EventHubScreen() {
         setEventDate(eDate);
         setHasEventPassed(eDate < new Date());
         
-        // 4. Role-specific data fetching
         if (profile?.role === 'coach') {
           await fetchCoachStats(event.id, event.team_id);
         } else {
@@ -93,7 +106,6 @@ export default function EventHubScreen() {
 
     const total = totalPlayers || 0;
     const no_response = total - (attending + declined);
-
     setAttendanceStats({ attending, declined, no_response, total });
   }
 
@@ -110,7 +122,6 @@ export default function EventHubScreen() {
 
   async function handleRSVP(newStatus: 'attending' | 'declined') {
     if (hasEventPassed) return; 
-    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -155,41 +166,36 @@ export default function EventHubScreen() {
           <Text className="text-slate-500 font-semibold">Event has passed - Attendance locked</Text>
         </View>
       )}
-      
       <View className="w-full space-y-3">
-        <Pressable 
+        <TouchableOpacity 
           disabled={hasEventPassed}
           onPress={() => handleRSVP('attending')}
           className={`py-4 rounded-xl items-center ${
-            hasEventPassed ? 'bg-slate-200' 
-            : playerStatus === 'attending' ? 'bg-green-600 border-2 border-green-800' 
-            : 'bg-green-500'
+            hasEventPassed ? 'bg-slate-200' : playerStatus === 'attending' ? 'bg-green-600 border-2 border-green-800' : 'bg-green-500'
           }`}
         >
-          <Text className={`font-bold text-lg ${hasEventPassed ? 'text-slate-400' : 'text-white'}`}>
+          <Text className="font-bold text-lg text-white">
             {playerStatus === 'attending' ? '✓ Attending' : 'Attending'}
           </Text>
-        </Pressable>
+        </TouchableOpacity>
 
-        <Pressable 
+        <TouchableOpacity 
           disabled={hasEventPassed}
           onPress={() => handleRSVP('declined')}
           className={`py-4 rounded-xl items-center ${
-            hasEventPassed ? 'bg-slate-200' 
-            : playerStatus === 'declined' ? 'bg-red-600 border-2 border-red-800' 
-            : 'bg-red-500'
+            hasEventPassed ? 'bg-slate-200' : playerStatus === 'declined' ? 'bg-red-600 border-2 border-red-800' : 'bg-red-500'
           }`}
         >
-          <Text className={`font-bold text-lg ${hasEventPassed ? 'text-slate-400' : 'text-white'}`}>
+          <Text className="font-bold text-lg text-white">
              {playerStatus === 'declined' ? '✓ Declined' : 'Declined'}
           </Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
     </View>
   );
 
   const CoachAttendanceView = () => {
-    const total = attendanceStats.total || 1; // Prevent NaN if division by zero
+    const total = attendanceStats.total || 1;
     const attendingWidth = `${(attendanceStats.attending / total) * 100}%`;
     const declinedWidth = `${(attendanceStats.declined / total) * 100}%`;
     const noResponseWidth = `${(attendanceStats.no_response / total) * 100}%`;
@@ -197,37 +203,123 @@ export default function EventHubScreen() {
     return (
       <View className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
         <Text className="font-bold text-lg mb-4 text-slate-800">Squad Availability</Text>
-        
         <View className="h-4 flex-row w-full rounded-full overflow-hidden mb-6">
           <View style={{ width: attendingWidth as DimensionValue }} className="bg-green-500" />
           <View style={{ width: declinedWidth as DimensionValue }} className="bg-red-500" />
           <View style={{ width: noResponseWidth as DimensionValue }} className="bg-slate-300" />
         </View>
-
         <View className="flex-row justify-between px-2">
-          <View className="items-center">
-            <Text className="text-green-600 font-bold text-xl">{attendanceStats.attending}</Text>
-            <Text className="text-slate-500 text-xs uppercase">Attending</Text>
-          </View>
-          <View className="items-center">
-            <Text className="text-red-600 font-bold text-xl">{attendanceStats.declined}</Text>
-            <Text className="text-slate-500 text-xs uppercase">Declined</Text>
-          </View>
-          <View className="items-center">
-            <Text className="text-slate-600 font-bold text-xl">{attendanceStats.no_response}</Text>
-            <Text className="text-slate-500 text-xs uppercase">No Reply</Text>
-          </View>
+          <View className="items-center"><Text className="text-green-600 font-bold text-xl">{attendanceStats.attending}</Text><Text className="text-slate-500 text-xs uppercase">Attending</Text></View>
+          <View className="items-center"><Text className="text-red-600 font-bold text-xl">{attendanceStats.declined}</Text><Text className="text-slate-500 text-xs uppercase">Declined</Text></View>
+          <View className="items-center"><Text className="text-slate-600 font-bold text-xl">{attendanceStats.no_response}</Text><Text className="text-slate-500 text-xs uppercase">No Reply</Text></View>
         </View>
       </View>
     );
   };
 
+  const PlayerReviewView = () => {
+  if (isSubmitted) {
+    return (
+      <View className="flex-1 items-center justify-center py-20">
+        <View className="bg-green-100 p-6 rounded-full mb-6">
+          {/* Using a fallback icon in case SymbolView is still acting up */}
+          <Text className="text-5xl">✅</Text>
+        </View>
+        <Text className="text-2xl font-black text-slate-900 mb-2">Review Submitted!</Text>
+        <Text className="text-slate-500 text-center px-10">
+          Thank you for your feedback. Your coach will see the summary shortly.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 0}
+      style={{ flex: 1 }} // CRITICAL: Ensures the keyboard view fills the screen
+    >
+      <ScrollView 
+        className="flex-1" 
+        contentContainerStyle={{ paddingBottom: 40 }} // Adds space at the bottom
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="py-4">
+          <Text className="text-slate-800 font-bold text-lg mb-6">Match Questionnaire</Text>
+
+          {/* 1. Team Performance */}
+          <View className="mb-8">
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-slate-600 font-semibold">Team Performance</Text>
+              <Text className="text-blue-600 font-black">{reviewForm.team_play}/10</Text>
+            </View>
+            <Slider
+              style={{ width: '100%', height: 40 }}
+              minimumValue={1} maximumValue={10} step={1}
+              value={reviewForm.team_play}
+              onValueChange={(val) => setReviewForm({ ...reviewForm, team_play: val })}
+              minimumTrackTintColor="#2563eb" maximumTrackTintColor="#cbd5e1"
+            />
+          </View>
+
+          {/* 2. Personal Performance */}
+          <View className="mb-8">
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-slate-600 font-semibold">Personal Performance</Text>
+              <Text className="text-blue-600 font-black">{reviewForm.personal_perf}/10</Text>
+            </View>
+            <Slider
+              style={{ width: '100%', height: 40 }}
+              minimumValue={1} maximumValue={10} step={1}
+              value={reviewForm.personal_perf}
+              onValueChange={(val) => setReviewForm({ ...reviewForm, personal_perf: val })}
+              minimumTrackTintColor="#2563eb" maximumTrackTintColor="#cbd5e1"
+            />
+          </View>
+
+          {/* 3. Text Inputs */}
+          <Text className="text-slate-600 font-semibold mb-2">Any improvements for team?</Text>
+          <TextInput
+            multiline
+            numberOfLines={3}
+            autoCorrect={false}
+            spellCheck={false}
+            className="bg-white p-4 rounded-xl border border-slate-200 mb-6 text-slate-900 min-h-[100px]"
+            placeholder="Share your thoughts..."
+            value={reviewForm.improvements}
+            onChangeText={(t) => setReviewForm({ ...reviewForm, improvements: t })}
+          />
+
+          <Text className="text-slate-600 font-semibold mb-2">Other comments</Text>
+          <TextInput
+            multiline
+            numberOfLines={3}
+            autoCorrect={false}
+            spellCheck={false}
+            className="bg-white p-4 rounded-xl border border-slate-200 mb-8 text-slate-900 min-h-[100px]"
+            placeholder="Anything else?"
+            value={reviewForm.comments}
+            onChangeText={(t) => setReviewForm({ ...reviewForm, comments: t })}
+          />
+
+          <TouchableOpacity 
+            className="bg-blue-600 p-5 rounded-2xl items-center shadow-lg"
+            onPress={() => setIsSubmitted(true)}
+          >
+            <Text className="text-white font-bold text-lg">Submit Review</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+
+  
   // --- MAIN RENDER ---
   if (isLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#2563eb" />
-        <Text className="mt-4 text-slate-500">Synchronising data...</Text>
       </View>
     );
   }
@@ -235,18 +327,21 @@ export default function EventHubScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Event Hub</Text>
-      <Text style={styles.subtitle}>ID: {eventId}</Text>
+      <Text style={styles.subtitle}>{eventDate?.toLocaleDateString('en-GB')}</Text>
 
       <TabToggle />
 
-      {activeTab === 'review' ? (
-        <View className="bg-blue-50 p-6 rounded-xl border border-blue-100 items-center justify-center h-48">
-          <Text className="text-blue-800 font-bold">Your 0-10 Sliders go here!</Text>
-        </View>
-      ) : (
+      {activeTab === 'attendance' ? (
         currentUserRole === 'coach' ? <CoachAttendanceView /> : <PlayerAttendanceView />
+      ) : (
+        currentUserRole === 'player' ? (
+          <PlayerReviewView />
+        ) : (
+          <View className="bg-slate-50 p-10 rounded-2xl border border-dashed border-slate-300 items-center">
+            <Text className="text-slate-400 text-center">Coach review summary will appear here once players have submitted feedback.</Text>
+          </View>
+        )
       )}
-
     </View>
   );
 }
