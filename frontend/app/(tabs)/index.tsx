@@ -54,14 +54,6 @@ export default function TabOneScreen() {
             <Text className="text-2xl font-bold text-slate-900">0</Text>
           </View>
         </View>
-
-        <TouchableOpacity 
-          className="bg-slate-900 p-5 rounded-2xl items-center shadow-sm"
-          onPress={() => alert('To be implemented lol soon')} 
-        >
-          <Text className="text-white font-bold">Create New Training Session</Text>
-        </TouchableOpacity>
-
         {loading && !refreshing && <ActivityIndicator className="mt-10" size="large" color="#000" />}
       </View>
     </ScrollView>
