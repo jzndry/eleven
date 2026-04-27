@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@react-native-community/datetimepicker": "8.6.0",
+    "@react-native-community/slider": "5.1.2",
     "@react-navigation/native": "^7.1.33",
     "@supabase/supabase-js": "^2.100.0",
     "babel-preset-expo": "^55.0.12",

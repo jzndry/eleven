@@ -8,7 +8,8 @@ import {
   Modal, 
   TextInput, 
   Pressable,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { SymbolView } from 'expo-symbols';
@@ -19,9 +20,9 @@ export default function ScheduleScreen() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null); // Track the role
   const router = useRouter();
 
-  // Form State for New Event
   const [form, setForm] = useState({
     event_type: 'Training',
     location: '',
@@ -37,18 +38,22 @@ export default function ScheduleScreen() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('team_id')
+        .select('team_id, role') // Retrieve role
         .eq('id', user.id)
         .single();
 
-      if (profile?.team_id) {
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .eq('team_id', profile.team_id)
-          .order('event_date', { ascending: true });
+      if (profile) {
+        setUserRole(profile.role); // Store the role
         
-        if (!error) setEvents(data || []);
+        if (profile.team_id) {
+          const { data, error } = await supabase
+            .from('events')
+            .select('*')
+            .eq('team_id', profile.team_id)
+            .order('event_date', { ascending: true });
+          
+          if (!error) setEvents(data || []);
+        }
       }
     } catch (err) {
       console.error("Error fetching schedule:", err);
@@ -57,15 +62,49 @@ export default function ScheduleScreen() {
     }
   };
 
-  useEffect(() => { 
-    fetchEvents(); 
-  }, []);
+  useEffect(() => { fetchEvents(); }, []);
 
   const handleSaveEvent = async () => {
-    // Logic for Supabase insert will go here
-    // For now, we just close and reset
-    setModalVisible(false);
-    fetchEvents();
+    try {
+      if (!form.location) {
+        Alert.alert("Missing Information", "Please enter a location.");
+        return;
+      }
+      if (form.event_type === 'Match' && !form.opponent) {
+        Alert.alert("Missing Information", "Please enter the opponent.");
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found.");
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('team_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.team_id) throw new Error("Team not verified.");
+
+      const { error } = await supabase
+        .from('events')
+        .insert({
+          team_id: profile.team_id,
+          event_type: form.event_type.toLowerCase(), 
+          location: form.location,
+          opponent: form.event_type === 'Match' ? form.opponent : null,
+          event_date: form.event_date.toISOString(), 
+        });
+
+      if (error) throw error;
+
+      setModalVisible(false);
+      setForm({ event_type: 'Training', location: '', opponent: '', event_date: new Date() });
+      fetchEvents();
+
+    } catch (error: any) {
+      Alert.alert("Error Saving Event", error.message);
+    }
   };
 
   const renderEvent = ({ item }: { item: any }) => (
@@ -107,7 +146,8 @@ export default function ScheduleScreen() {
           data={events}
           keyExtractor={(item) => item.id}
           renderItem={renderEvent}
-          contentContainerStyle={{ paddingBottom: 120 }} 
+          // Reduce padding for players since they don't have the floating buttons
+          contentContainerStyle={{ paddingBottom: userRole === 'coach' ? 140 : 20 }} 
           ListEmptyComponent={
             <View className="items-center mt-20">
               <Text className="text-slate-400">No upcoming events found.</Text>
@@ -116,19 +156,32 @@ export default function ScheduleScreen() {
         />
       )}
       
-      {/* Main Create Event Button */}
-      <View className="absolute bottom-8 left-4 right-4 items-center">
-        <TouchableOpacity 
-          activeOpacity={0.9}
-          onPress={() => setModalVisible(true)}
-          className="bg-indigo-600 h-16 w-full rounded-2xl flex-row items-center justify-center shadow-2xl"
-        >
-          <SymbolView name="plus.circle.fill" size={20} tintColor="white" />
-          <Text className="text-white font-bold text-lg ml-2">Create New Event</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 3. RULE: Only Coaches see the creation buttons */}
+      {userRole === 'coach' && (
+        <View className="absolute bottom-8 left-4 right-4 flex-row space-x-3">
+          <TouchableOpacity 
+            onPress={() => {
+              setForm({ ...form, event_type: 'Training', opponent: '' });
+              setModalVisible(true);
+            }}
+            className="flex-1 bg-white h-16 rounded-2xl flex-row items-center justify-center border border-slate-200 shadow-sm"
+          >
+            <Text className="text-indigo-600 font-bold ml-2">Training</Text>
+          </TouchableOpacity>
 
-      {/* Modal - Event Creator */}
+          <TouchableOpacity 
+            onPress={() => {
+              setForm({ ...form, event_type: 'Match' });
+              setModalVisible(true);
+            }}
+            className="flex-1 bg-indigo-600 h-16 rounded-2xl flex-row items-center justify-center shadow-lg"
+          >
+            <Text className="text-white font-bold ml-2">Match</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Modal - Remains the same, but only reachable by Coaches */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -137,35 +190,13 @@ export default function ScheduleScreen() {
       >
         <View className="flex-1 justify-end bg-black/40">
           <View className="bg-white rounded-t-[40px] p-8 h-[85%] shadow-lg">
-            {/* Header */}
             <View className="flex-row justify-between items-center mb-8">
-              <Text className="text-2xl font-bold text-slate-900">New Event</Text>
+              <Text className="text-2xl font-bold text-slate-900">New {form.event_type}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <SymbolView name="xmark.circle.fill" size={28} tintColor="#cbd5e1" />
               </TouchableOpacity>
             </View>
-            
-            {/* 1. Event Type Selector */}
-            <Text className="text-slate-500 font-bold mb-3 uppercase text-[10px] tracking-widest">Event Type</Text>
-            <View className="flex-row bg-slate-100 p-1 rounded-2xl mb-6">
-              <Pressable 
-                onPress={() => setForm({...form, event_type: 'Training'})}
-                className={`flex-1 py-3 rounded-xl items-center ${form.event_type === 'Training' ? 'bg-white shadow-sm' : ''}`}
-              >
-                <Text className={`font-bold ${form.event_type === 'Training' ? 'text-indigo-600' : 'text-slate-500'}`}>Training</Text>
-              </Pressable>
-              <Pressable 
-                onPress={() => setForm({...form, event_type: 'Match'})}
-                className={`flex-1 py-3 rounded-xl items-center ${form.event_type === 'Match' ? 'bg-white shadow-sm' : ''}`}
-              >
-                <Text className={`font-bold ${form.event_type === 'Match' ? 'text-indigo-600' : 'text-slate-500'}`}>Match</Text>
-              </Pressable>
-              <View className="flex-1 py-3 items-center opacity-30">
-                <Text className="font-bold text-slate-400">Other</Text>
-              </View>
-            </View>
 
-            {/* 2. Location */}
             <Text className="text-slate-500 font-bold mb-3 uppercase text-[10px] tracking-widest">Location</Text>
             <TextInput 
               className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 text-slate-900"
@@ -175,9 +206,8 @@ export default function ScheduleScreen() {
               onChangeText={(text) => setForm({...form, location: text})}
             />
 
-            {/* 3. Date and Time (Meet Time) */}
             <Text className="text-slate-500 font-bold mb-3 uppercase text-[10px] tracking-widest">Meet Time</Text>
-            <View className="flex-row items-center justify-between mb-6">
+            <View className="flex-row items-center justify-between mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-200">
               <DateTimePicker
                 value={form.event_date}
                 mode="date"
@@ -194,13 +224,12 @@ export default function ScheduleScreen() {
               />
             </View>
 
-            {/* 4. Opponent (Conditional) */}
             {form.event_type === 'Match' && (
               <View>
                 <Text className="text-slate-500 font-bold mb-3 uppercase text-[10px] tracking-widest">Opponent</Text>
                 <TextInput 
                   className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 text-slate-900"
-                  placeholder="e.g. Rival FC"
+                  placeholder="e.g KCL"
                   placeholderTextColor="#94a3b8"
                   value={form.opponent}
                   onChangeText={(text) => setForm({...form, opponent: text})}

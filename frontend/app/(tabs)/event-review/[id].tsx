@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 
 // IMPORTANT: Adjust this path to wherever your Supabase client is initialised!
 import { supabase } from '../../../lib/supabase'; 
-// import Slider from '@react-native-community/slider';
+import Slider from '@react-native-community/slider';
 
 export default function EventHubScreen() {
   const { id } = useLocalSearchParams();
