@@ -40,6 +40,14 @@ function InitialLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen 
+        name="add-event" 
+        options={{ 
+          presentation: 'modal', 
+          animation: 'fade', 
+          headerShown: false 
+        }} 
+      />
     </Stack>
   );
 }
