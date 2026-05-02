@@ -11,30 +11,12 @@ import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 function TabLayout() {
   const colorScheme = useColorScheme();
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      Alert.alert("Error", "Could not sign out. Please try again.");
-    }
-  };
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: useClientOnlyValue(false, true),
-        headerRight: () => (
-          <Pressable onPress={handleSignOut} style={{ marginRight: 15 }}>
-            {({ pressed }) => (
-              <SymbolView
-                name="rectangle.portrait.and.arrow.right"
-                size={22}
-                tintColor="#ef4444"
-                style={{ opacity: pressed ? 0.5 : 1 }}
-              />
-            )}
-          </Pressable>
-        ),
+        headerShown: useClientOnlyValue(false, true)
       }}>
       <Tabs.Screen
         name="index"
@@ -62,10 +44,10 @@ function TabLayout() {
       />
 
       <Tabs.Screen
-        name="messages"
+        name="settings"
         options={{
-          title: 'Messages',
-          tabBarIcon: ({ color }) => <SymbolView name="message.fill" size={24} tintColor={color} />,
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <SymbolView name="gearshape.fill" size={24} tintColor={color} />,
         }}
       />
 
