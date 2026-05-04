@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { supabase } from '../lib/supabase';
@@ -29,8 +29,10 @@ function InitialLayout() {
   useEffect(() => {
     if (!initialized) return;
 
+    // We identify where the user currently is in the app structure
     const inAuthGroup = segments[0] === '(auth)';
     const isOnboarding = segments[0] === 'onboarding';
+    const isAtRoot = (segments as string[]).length === 0; // looks janks but type casting error occured here
 
     const checkNavigation = async () => {
       if (!session) {
@@ -55,15 +57,15 @@ function InitialLayout() {
               router.replace('/(auth)/onboarding');
             }
           } else {
-            // User is finished, if they are still in auth screens, move them to the app
-            if (inAuthGroup || isOnboarding) {
-              router.replace('/(tabs)');
+            // 3. User is finished. Redirect to tabs if they are at the root or auth pages
+            if (inAuthGroup || isOnboarding || isAtRoot) {
+              router.replace('/(tabs)/home');
             }
           }
         } catch (err) {
           console.error("Navigation error:", err);
           // Fallback to avoid getting stuck
-          if (inAuthGroup) router.replace('/(tabs)');
+          if (inAuthGroup || isAtRoot) router.replace('/(tabs)/home');
         }
       }
     };
@@ -71,7 +73,7 @@ function InitialLayout() {
     checkNavigation();
   }, [session, segments, initialized]);
 
-  // Initialised guard to prevent screen flicker before we know the auth state
+  // Initialised guard to prevent screen flicker
   if (!initialized) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
@@ -84,6 +86,17 @@ function InitialLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+      {/* The Add Event Drawer Configuration */}
+      <Stack.Screen 
+        name="add-event" 
+        options={{ 
+          presentation: 'transparentModal', // Allows the backdrop dimming effect
+          animation: 'slide_from_bottom',
+          gestureEnabled: true,
+          headerShown: false 
+        }}
+      />
     </Stack>
   );
 }

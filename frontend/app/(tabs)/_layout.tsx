@@ -18,8 +18,9 @@ function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: useClientOnlyValue(false, true)
       }}>
+
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <SymbolView name="house.fill" size={24} tintColor={color} />,
@@ -58,6 +59,8 @@ function TabLayout() {
           title: 'AI Analysis',
         }}
       />
+
+      
     </Tabs>
   );
 }

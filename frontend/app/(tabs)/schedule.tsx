@@ -5,14 +5,26 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { SymbolView } from 'expo-symbols';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function ScheduleScreen() {
   const router = useRouter();
+  const {refresh} = useLocalSearchParams();  // Listen for refresh param to trigger data reload when coming back from add/edit screens
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [userRole, setUserRole] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      // STRICT CHECK: Only fetch if the 'refresh' param is present
+      if (refresh === 'true') {
+        fetchEvents();
+        // Clear the param so it doesn't refresh again next time you view the screen
+        router.setParams({ refresh: undefined }); 
+      }
+    }, [refresh])
+  );
 
   const fetchEvents = async () => {
     setLoading(true);

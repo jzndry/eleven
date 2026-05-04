@@ -9,6 +9,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+
+  // update this after testing to remove dev quick access and add forgot password link
   async function signInWithEmail(devEmail?: string, devPassword?: string) {
     setLoading(true);
     
@@ -27,6 +29,7 @@ export default function LoginScreen() {
       // Success navigation is usually handled by an Auth Provider listener, 
       // but you can force it here if needed:
       router.replace('/(tabs)/schedule');
+      console.log("Login successful for:", targetEmail);
     }
     setLoading(false);
   }

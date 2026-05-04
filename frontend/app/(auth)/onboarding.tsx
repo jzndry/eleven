@@ -82,7 +82,7 @@ export default function OnboardingScreen() {
       }
 
       // Move to the main app
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/home');
     } catch (error: any) {
       Alert.alert("Setup Error", error.message);
     } finally {
