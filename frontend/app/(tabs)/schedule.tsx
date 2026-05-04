@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
-  View, Text, FlatList, TouchableOpacity, 
-  ActivityIndicator
+  View, Text, FlatList, Pressable, 
+  ActivityIndicator, StyleSheet, TouchableOpacity, Alert
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 
-
 export default function ScheduleScreen() {
+  const router = useRouter();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const [userRole, setUserRole] = useState<string | null>(null); 
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -25,7 +24,7 @@ export default function ScheduleScreen() {
         .from('profiles')
         .select('team_id, role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         setUserRole(profile.role);
@@ -40,13 +39,27 @@ export default function ScheduleScreen() {
         }
       }
     } catch (err) {
-      console.error("Error fetching schedule:", err);
+      console.log("Fetch error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => { fetchEvents(); }, []);
+
+  const handleTabChange = useCallback((tab: 'upcoming' | 'past') => {
+    setActiveTab(tab);
+  }, []);
+
+  const displayedEvents = useMemo(() => {
+    const now = new Date();
+    if (activeTab === 'upcoming') {
+      return events.filter(event => new Date(event.event_date) >= now);
+    } else {
+      return events.filter(event => new Date(event.event_date) < now)
+        .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
+    }
+  }, [events, activeTab]);
 
   const renderEvent = ({ item }: { item: any }) => (
     <TouchableOpacity 
@@ -78,43 +91,124 @@ export default function ScheduleScreen() {
     </TouchableOpacity>
   );
 
+  
+
   return (
-    <View className="flex-1 bg-slate-50 p-4">
-      {loading ? (
-        <ActivityIndicator color="#4f46e5" size="large" className="mt-10" />
-      ) : (
-        <FlatList
-          data={events}
-          keyExtractor={(item) => item.id}
-          renderItem={renderEvent}
-          contentContainerStyle={{ paddingBottom: 120 }} 
-          ListEmptyComponent={
-            <View className="items-center mt-20">
-              <Text className="text-slate-400">No upcoming events found.</Text>
-            </View>
-          }
-        />
-      )}
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.toggleContainer}>
+          <Pressable 
+            onPress={() => handleTabChange('upcoming')}
+            style={[styles.toggleButton, activeTab === 'upcoming' && styles.toggleActive]}
+          >
+            <Text style={[styles.toggleText, activeTab === 'upcoming' && styles.toggleTextActive]}>Upcoming</Text>
+          </Pressable>
+          <Pressable 
+            onPress={() => handleTabChange('past')}
+            style={[styles.toggleButton, activeTab === 'past' && styles.toggleActive]}
+          >
+            <Text style={[styles.toggleText, activeTab === 'past' && styles.toggleTextActive]}>Past</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <View className="flex-1 px-5">
+        {loading ? (
+          <ActivityIndicator color="#4f46e5" size="large" className="mt-10" />
+        ) : (
+          <FlatList
+            data={displayedEvents}
+            keyExtractor={(item) => item.id}
+            renderItem={renderEvent}
+            contentContainerStyle={{ paddingTop: 16, paddingBottom: 140 }} 
+            showsVerticalScrollIndicator={false }
+            ListEmptyComponent={
+              <View className="items-center mt-20">
+                <Text className="text-slate-400 font-medium">No {activeTab} events found.</Text>
+              </View>
+            }
+          />
+        )}
+      </View>
       
       {userRole === 'coach' && (
-        <View className="absolute bottom-6 left-0 right-0 items-center px-6">
-          <TouchableOpacity 
+        <View className="absolute bottom-10 left-0 right-0 items-center px-6">
+          <Pressable 
             onPress={() => router.push('/add-event')}
-            activeOpacity={0.9}
-            style={{ 
-              shadowColor: '#4f46e5', 
-              shadowOffset: { width: 0, height: 8 }, 
-              shadowOpacity: 0.2, 
-              shadowRadius: 10, 
-              elevation: 5 
-            }}
-            className="bg-indigo-600 w-full h-16 rounded-2xl flex-row items-center justify-between px-6"
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.9 : 1,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
+              ...styles.fabShadow
+            })}
+            className="bg-indigo-600 w-full h-16 rounded-2xl flex-row items-center justify-between px-8"
           >
             <Text className="text-white font-bold text-lg">Add new event</Text>
             <SymbolView name="plus" size={22} tintColor="white" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc', // Darker backdrop to make cards pop
+  },
+  header: {
+    padding: 24,
+    paddingTop: 24,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    padding: 4,
+    borderRadius: 16,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  toggleActive: {
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toggleText: {
+    textAlign: 'center',
+    fontWeight: '700',
+    color: '#64748b',
+  },
+  toggleTextActive: {
+    color: '#4f46e5',
+  },
+  eventCard: {
+    backgroundColor: 'white',
+    padding: 20,
+    marginBottom: 20, // Clear vertical separation
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    // iOS Shadows
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 4, 
+  },
+  fabShadow: {
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+  }
+});

@@ -26,7 +26,6 @@ function TabLayout() {
         }}
       />
       
-      {/* 1. Added Schedule Tab */}
       <Tabs.Screen
         name="schedule"
         options={{
@@ -51,11 +50,11 @@ function TabLayout() {
         }}
       />
 
-      {/* 2. Added HIDDEN Event Review Route */}
+      {/* Hidden Event Review Route */}
       <Tabs.Screen
         name="event-review/[id]"
         options={{
-          href: null, // This is the 'magic' that keeps the bars but hides the icon
+          href: null, // Keeps the bars but hides the icon
           title: 'AI Analysis',
         }}
       />
