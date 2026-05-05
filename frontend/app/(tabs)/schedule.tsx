@@ -144,7 +144,7 @@ export default function ScheduleScreen() {
       </View>
       
       {userRole === 'coach' && (
-        <View className="absolute bottom-10 left-0 right-0 items-center px-6">
+        <View className="absolute bottom-10 left-0 right-0 items-center px-10">
           <Pressable 
             onPress={() => router.push('/add-event')}
             style={({ pressed }) => ({
