@@ -60,6 +60,15 @@ function TabLayout() {
         }}
       />
 
+            {/* Hidden Event Review Route */}
+      <Tabs.Screen
+        name="player/[id]"
+        options={{
+          href: null, // Keeps the bars but hides the icon
+          title: 'Player Details',
+        }}
+      />
+
       
     </Tabs>
   );

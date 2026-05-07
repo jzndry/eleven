@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { SymbolView } from 'expo-symbols';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 export default function TeamScreen() {
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState<string>('Your Squad');
+  const router = useRouter();
 
   const fetchSquad = async () => {
     setLoading(true);
@@ -45,9 +47,11 @@ export default function TeamScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchSquad();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchSquad();
+    }, [])
+  );
 
   return (
     <View className="flex-1 bg-slate-50 p-4">
@@ -60,7 +64,10 @@ export default function TeamScreen() {
         data={players}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity className="bg-white p-4 mb-2 rounded-2xl flex-row items-center shadow-sm border border-slate-100">
+          <TouchableOpacity 
+            onPress={() => router.push(`/player/${item.id}`)}
+            className="bg-white p-4 mb-2 rounded-2xl flex-row items-center shadow-sm border border-slate-100"
+          >
             <View className="h-12 w-12 bg-indigo-100 rounded-full items-center justify-center mr-4">
               <Text className="text-indigo-700 font-bold text-lg">{item.full_name?.charAt(0)}</Text>
             </View>
