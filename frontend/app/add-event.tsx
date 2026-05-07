@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: 'center', 
   },
   toggleBtnActive: {
     backgroundColor: 'white',

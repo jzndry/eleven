@@ -23,23 +23,26 @@ export default function SignUpScreen() {
   const [joinCode, setJoinCode] = useState(''); 
   const [loading, setLoading] = useState(false);
 
-  // Memoised toggle to shield the re-render from the navigation context
+  // ERROR IN THIS PAGE OCCURRED DUE TO STYLING ISSUES WITH THE ROLE TOGGLE, 
+  // REWRITING WITH A MORE STANDARD APPROACH TO AVOID FURTHER DELAYS.
+
+  // Memoised toggle to shield the re-render from the navigation context; Not strictly necessary but good practice for performance
   const toggleRole = useCallback((newRole: 'coach' | 'player') => {
     setRole(newRole);
   }, []);
 
   async function signUpWithEmail() {
-    // 1. Basic Validation
+    // Basic Validation
     if (!email.trim() || !password || !confirmPassword) {
       return Alert.alert("Required Fields", "Please enter your email and a valid password.");
     }
 
-    // 2. Player-specific Validation
+    // Player-specific Validation
     if (role === 'player' && !joinCode.trim()) {
       return Alert.alert("Join Code Required", "Please enter the code provided by your coach to join a team.");
     }
 
-    // 3. Password Check
+    // Password match check
     if (password !== confirmPassword) {
       return Alert.alert("Password Mismatch", "The passwords entered do not match.");
     }
@@ -67,11 +70,11 @@ export default function SignUpScreen() {
         }
       } else {
         // Successful signup
-        Alert.alert(
-          "Verification Required", 
-          "Account created! Please check your email for a verification link before signing in."
-        );
         router.replace('/(auth)/login');
+        Alert.alert(
+          "Welcome to Coach AI!", 
+          "Your account has been created!"
+        );
       }
     } catch (error: any) {
       Alert.alert("Sign Up Error", error.message);

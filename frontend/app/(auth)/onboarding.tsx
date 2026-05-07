@@ -115,7 +115,7 @@ export default function OnboardingScreen() {
           </Text>
           <TextInput 
             className="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6 text-lg" 
-            placeholder="e.g. Ted Lasso" 
+            placeholder="e.g. Jandry Rodriguez" 
             value={fullName} 
             onChangeText={setFullName} 
           />
@@ -127,7 +127,7 @@ export default function OnboardingScreen() {
               </Text>
               <TextInput 
                 className="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6 text-lg" 
-                placeholder="e.g. AFC Richmond" 
+                placeholder="e.g. Queen Mary Football Club " 
                 value={teamName} 
                 onChangeText={setTeamName} 
               />

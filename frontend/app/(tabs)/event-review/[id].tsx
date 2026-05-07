@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-nati
 import { useLocalSearchParams } from 'expo-router';
 import { supabase } from '../../../lib/supabase'; 
 
-// Split components for better organisation
+// Split components for better organisation, there was too much going in this screen
 import { AttendanceView } from '../../../components/AttendanceView';
 import { ReviewForm } from '../../../components/ReviewForm';
 import { CoachSummary } from '../../../components/CoachSummary';
