@@ -1,8 +1,6 @@
 import React from 'react';
-import { supabase } from '../../lib/supabase'; 
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
-import { Pressable, Alert } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';

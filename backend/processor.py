@@ -1,6 +1,16 @@
 import pandas as pd
 import os
 from google import genai
+from dotenv import load_dotenv
+
+load_dotenv()
+
+try:
+    client = genai.Client()
+    print("GenAI Client successfully initialised.")
+except Exception as e:
+    print(f"Failed to initialise GenAI client: {e}")
+    client = None
 
 # new client automatically looks for the GEMINI_API_KEY environment variable
 try:
