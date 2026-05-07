@@ -3,17 +3,14 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import processor 
 
-# Load environment variables from the .env file in the backend directory
+# Load credentials
 load_dotenv()
+url: str = os.environ.get("SUPABASE_URL") or ""
+key: str = os.environ.get("SUPABASE_KEY") or ""
 
-# Using os.getenv to fetch credentials; we check for None to satisfy type checkers
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
-
-if url is None or key is None:
+if not url or not key:
     raise ValueError("Missing SUPABASE_URL or SUPABASE_KEY in .env file.")
 
-# Initialise the Supabase client with the Service Role Key for admin access
 supabase: Client = create_client(url, key)
 
 def run_event_analysis(event_id: str, team_id: str):
@@ -36,7 +33,6 @@ def run_event_analysis(event_id: str, team_id: str):
         supabase.table("events").update({"event_summary": event_text}).eq("id", event_id).execute()
 
         # 4. Update the Team's "Last 4" and "Overall" summary
-        # We use .single() because we only want one team's record
         team_query = supabase.table("teams") \
             .select("summary_last_4") \
             .eq("id", team_id) \
@@ -45,10 +41,8 @@ def run_event_analysis(event_id: str, team_id: str):
         
         current_last_4 = []
         
-        # We are doing this check to prevent the 'Attribute get is unknown' error
         # By verifying it is a dict, Python allows us to use .get() safely
         if team_query.data and isinstance(team_query.data, dict):
-            # If the column is NULL in the database, .get() returns None
             raw_history = team_query.data.get("summary_last_4")
             current_last_4 = raw_history if isinstance(raw_history, list) else []
         else:
@@ -61,7 +55,7 @@ def run_event_analysis(event_id: str, team_id: str):
         overall_text = processor.generate_overall_summary(updated_last_4)
 
         # 5. Save to Team table
-        # We are doing this to update the team dashboard with the latest insights
+        # We are doing this to update the team dashboard with the latest qualitative insights
         supabase.table("teams").update({
             "summary_overall": overall_text,
             "summary_last_4": updated_last_4
@@ -70,11 +64,10 @@ def run_event_analysis(event_id: str, team_id: str):
         print(f"--- Analysis Complete: Team {team_id} updated successfully ---")
 
     except Exception as e:
-        # We are doing this to catch database timeouts or schema mismatches
         print(f"Analysis failed for event {event_id}: {e}")
 
 if __name__ == "__main__":
-    # Replace these with real UUIDs from your Supabase dashboard to test
-    RUN_EVENT_ID = ""
-    RUN_TEAM_ID = ""
+    # YOU MUST PASTE REAL UUIDs FROM SUPABASE HERE
+    RUN_EVENT_ID = "paste-an-event-id-here"
+    RUN_TEAM_ID = "paste-a-team-id-here"
     run_event_analysis(RUN_EVENT_ID, RUN_TEAM_ID)

@@ -36,7 +36,7 @@ function TabLayout() {
       />
 
       <Tabs.Screen
-        name="team"
+        name="squad"
         options={{
           title: 'Squad',
           tabBarIcon: ({ color }) => <SymbolView name="person.3.fill" size={24} tintColor={color} />,

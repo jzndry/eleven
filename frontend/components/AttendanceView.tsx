@@ -43,21 +43,32 @@ export const AttendanceView = ({ role, stats, playerStatus, hasEventPassed, onRS
   }
 
   return (
-    <View className="space-y-4">
-      <TouchableOpacity 
-        disabled={hasEventPassed}
-        onPress={() => onRSVP('attending')}
-        className={`py-5 rounded-2xl items-center ${playerStatus === 'attending' ? 'bg-green-600' : 'bg-green-500'}`}
-      >
-        <Text className="font-bold text-lg text-white">Attending</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        disabled={hasEventPassed}
-        onPress={() => onRSVP('declined')}
-        className={`py-5 rounded-2xl items-center ${playerStatus === 'declined' ? 'bg-red-600' : 'bg-red-500'}`}
-      >
-        <Text className="font-bold text-lg text-white">Declined</Text>
-      </TouchableOpacity>
+    <View className="mt-2">
+      {/* Increased spacing between buttons */}
+      <View className="space-y-6">
+        <TouchableOpacity 
+          disabled={hasEventPassed}
+          onPress={() => onRSVP('attending')}
+          className={`py-5 rounded-2xl items-center ${playerStatus === 'attending' ? 'bg-green-600' : 'bg-green-500'}`}
+        >
+          <Text className="font-bold text-lg text-white">Attending</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          disabled={hasEventPassed}
+          onPress={() => onRSVP('declined')}
+          className={`py-5 rounded-2xl items-center ${playerStatus === 'declined' ? 'bg-red-600' : 'bg-red-500'}`}
+        >
+          <Text className="font-bold text-lg text-white">Declined</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Conditionally rendered message when the event has passed */}
+      {hasEventPassed && (
+        <Text className="text-center text-slate-500 mt-6 font-medium">
+          Event has passed. Attendance cannot be changed.
+        </Text>
+      )}
     </View>
   );
 };

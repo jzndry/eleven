@@ -23,10 +23,7 @@ export default function SignUpScreen() {
   const [joinCode, setJoinCode] = useState(''); 
   const [loading, setLoading] = useState(false);
 
-  // ERROR IN THIS PAGE OCCURRED DUE TO STYLING ISSUES WITH THE ROLE TOGGLE, 
-  // REWRITING WITH A MORE STANDARD APPROACH TO AVOID FURTHER DELAYS.
-
-  // Memoised toggle to shield the re-render from the navigation context; Not strictly necessary but good practice for performance
+  // Memoised toggle to shield the re-render from the navigation context
   const toggleRole = useCallback((newRole: 'coach' | 'player') => {
     setRole(newRole);
   }, []);
@@ -50,14 +47,36 @@ export default function SignUpScreen() {
     setLoading(true);
     
     try {
+      let assignedTeamId = null;
+
+      // NEW LOGIC: Verify the join code and get the team ID before signing up
+      if (role === 'player') {
+        const cleanCode = joinCode.trim().toUpperCase();
+        const { data: teamData, error: teamQueryError } = await supabase
+          .from('teams')
+          .select('id')
+          .eq('join_code', cleanCode)
+          .maybeSingle();
+
+        if (teamQueryError) throw teamQueryError;
+        
+        if (!teamData) {
+          setLoading(false);
+          return Alert.alert("Invalid Code", "We could not find a squad with that join code. Please verify it with your coach.");
+        }
+        
+        assignedTeamId = teamData.id;
+      }
+
+      // Proceed with signup, passing the resolved UUID directly to metadata
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
         options: {
           data: {
             role: role,
-            // We save the joinCode to metadata so we can process it after email verification
-            ...(role === 'player' ? { temp_join_code: joinCode.trim() } : {}),
+            // We save the actual team_id so the database trigger can process it seamlessly
+            ...(assignedTeamId ? { team_id: assignedTeamId } : {}),
           },
         },
       });
@@ -148,11 +167,11 @@ export default function SignUpScreen() {
           
           {role === 'player' && (
             <TextInput 
-              className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-4" 
+              className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-4 uppercase" 
               placeholder="Squad Join Code" 
               value={joinCode} 
               onChangeText={setJoinCode} 
-              autoCapitalize="none"
+              autoCapitalize="characters"
             />
           )}
 

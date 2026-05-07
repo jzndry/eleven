@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router'; // Added useRouter
 import { supabase } from '../../../lib/supabase'; 
+import { SymbolView } from 'expo-symbols'; // Added for the back icon
 
-// Split components for better organisation, there was too much going in this screen
+// Split components for better organisation
 import { AttendanceView } from '../../../components/AttendanceView';
 import { ReviewForm } from '../../../components/ReviewForm';
 import { CoachSummary } from '../../../components/CoachSummary';
 
 export default function EventHubScreen() {
   const { id } = useLocalSearchParams();
+  const router = useRouter(); // Initialised router
   const eventId = typeof id === 'string' ? id : id[0];
   const [activeTab, setActiveTab] = useState('attendance'); 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<'player' | 'coach' | null>(null);
-  const [eventDate, setEventDate] = useState<Date | null>(null);
+  
+  // Minimal state addition to hold event info for the title
+  const [eventInfo, setEventInfo] = useState({ type: '', opponent: '', dateStr: '' });
+  
   const [hasEventPassed, setHasEventPassed] = useState(false);
   const [attendanceStats, setAttendanceStats] = useState({ attending: 0, declined: 0, no_response: 0, total: 0 });
   const [playerStatus, setPlayerStatus] = useState<string | null>(null); 
@@ -31,9 +36,17 @@ export default function EventHubScreen() {
       if (!user) return;
       const { data: profile } = await supabase.from('profiles').select('role, team_id').eq('id', user.id).single();
       if (profile) setCurrentUserRole(profile.role as 'player' | 'coach');
+      
       const { data: event } = await supabase.from('events').select('*').eq('id', eventId).single();
       if (event) {
-        setEventDate(new Date(event.event_date));
+        // Setting event info for our dynamic title
+        setEventInfo({
+          type: event.event_type,
+          opponent: event.opponent || '',
+          dateStr: new Date(event.event_date).toLocaleDateString('en-GB', { 
+            weekday: 'short', day: 'numeric', month: 'short' 
+          })
+        });
         setHasEventPassed(new Date(event.event_date) < new Date());
         if (profile?.role === 'coach') await fetchCoachStats(event.id, event.team_id);
         else await fetchPlayerStatus(event.id, user.id);
@@ -65,7 +78,22 @@ export default function EventHubScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Event Hub</Text>
+      {/* Header Row: Keeps styles.title but adds back button and dynamic text */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 40 }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 10, marginLeft: -15 }}>
+          <SymbolView name="chevron.left" size={24} tintColor="#0f172a" />
+        </TouchableOpacity>
+        
+        <View style={{ flex: 1, marginLeft: 5 }}>
+          <Text style={[styles.title, { marginBottom: 0, textAlign: 'left', fontSize: 20 }]}>
+            {eventInfo.type === 'match' ? `Match vs ${eventInfo.opponent}` : 'Training Session'}
+          </Text>
+          <Text style={{ color: '#64748b', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' }}>
+            {eventInfo.dateStr}
+          </Text>
+        </View>
+      </View>
+
       <View className="flex-row bg-slate-200 p-1 rounded-xl mb-6">
         <Pressable onPress={() => setActiveTab('attendance')} className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'attendance' ? 'bg-white' : ''}`}>
           <Text className="font-bold">Attendance</Text>
