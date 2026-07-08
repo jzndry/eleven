@@ -10,13 +10,7 @@ The platform consolidates core logistics while also using generative ai (Gemini 
 
 CoachAI is engineered as a three-tier, decoupled, real-time platform: 
 
-[ Cross-Platform Client ] ◄───(Real-Time WebSockets/Sync)───► [ Supabase Data Tier ]
-   (React Native & Expo)                                        (PostgreSQL Engine)
-                                                                        ▲
-                                                                        │ (Async Batch Fetch)
-                                                                        ▼
-                                                               [ Python AI Engine ]
-                                                               (Gemini 3 Flash LLM)
+![System architecture picture](fyp-readme-architecture.png)
 
 ## Core Features:
 
