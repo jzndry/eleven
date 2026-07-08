@@ -10,7 +10,7 @@ The platform consolidates core logistics while also using generative ai (Gemini 
 
 CoachAI is engineered as a three-tier, decoupled, real-time platform: 
 
-![System architecture picture](fyp-readme-architecture.png)
+![System architecture picture](showcase/fyp-readme-architecture.png)
 
 ## Core Features:
 
