@@ -17,3 +17,4 @@ backend/__pycache__/*.py
 *.mp4
 *.pdf
 *.docx
+.DS_Store
