@@ -18,3 +18,4 @@ backend/__pycache__/*.py
 *.pdf
 *.docx
 .DS_Store
+.vscode/
