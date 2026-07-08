@@ -58,7 +58,7 @@ function TabLayout() {
         }}
       />
 
-            {/* Hidden Event Review Route */}
+      {/* Hidden Event Player Route */}
       <Tabs.Screen
         name="player/[id]"
         options={{

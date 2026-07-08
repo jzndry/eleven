@@ -35,7 +35,7 @@ def generate_event_summary(responses):
         data_string = df.to_string(index=False)
 
     prompt = f"""
-    You are an expert football coach assistant. 
+    You are a UEFA-license expert football coach assistant. 
     Analyse the following post-match/training feedback from {count} players. 
     Provide a concise, professional 2-3 sentence summary of the squad's performance, morale, and any key tactical feedback mentioned. 
     Use British English spelling and do not use emojis.
@@ -75,7 +75,7 @@ def generate_overall_summary(last_4_summaries):
     summaries_text = "\n".join([f"- {s}" for s in last_4_summaries])
     
     prompt = f"""
-    You are an expert football coach assistant. 
+    You are a UEFA-license expert football coach assistant. 
     Read the following summaries from the team's last {count} events.
     Provide a concise 2-3 sentence monthly trend analysis highlighting consistency, improvements, or recurring tactical issues.
     Use British English spelling and do not use emojis.

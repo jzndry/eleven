@@ -67,7 +67,6 @@ def run_event_analysis(event_id: str, team_id: str):
         print(f"Analysis failed for event {event_id}: {e}")
 
 if __name__ == "__main__":
-    # YOU MUST PASTE REAL UUIDs FROM SUPABASE HERE
     RUN_EVENT_ID = "6ece6d5c-e77e-4542-bf5c-18e04d8eda02"
     RUN_TEAM_ID = "4e73f290-d6f5-42e9-8d96-48bb41b2fd9b"
     run_event_analysis(RUN_EVENT_ID, RUN_TEAM_ID)

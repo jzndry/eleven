@@ -49,7 +49,7 @@ export default function SignUpScreen() {
     try {
       let assignedTeamId = null;
 
-      // NEW LOGIC: Verify the join code and get the team ID before signing up
+      // Verify the join code and get the team ID before signing up
       if (role === 'player') {
         const cleanCode = joinCode.trim().toUpperCase();
         const { data: teamData, error: teamQueryError } = await supabase

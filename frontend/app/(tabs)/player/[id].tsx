@@ -59,6 +59,7 @@ export default function PlayerDetailScreen() {
             setLoading(true);
             try {
               // We set team_id to null instead of deleting the profile entirely
+              // Need to add some fix to a hanging player profile if we want to re-add them to a team in the future
               const { error } = await supabase
                 .from('profiles')
                 .update({ team_id: null })
@@ -116,7 +117,7 @@ export default function PlayerDetailScreen() {
         </Text>
       </View>
 
-      {/* Action Section */}
+      {/* Little Action Section */}
       {currentUserRole === 'coach' && (
         <TouchableOpacity 
           onPress={handleRemovePlayer} 
