@@ -1,5 +1,7 @@
 # ElevenOps 
 
+Cross platform mobile application desgined for the QMUL Football Team coaches.
+
 ## 📌 Reason Behind This Project:
 
 Managers frequently spend between 2 to 7+ hours per week handling purely administrative tasks—such as tracking RSVPs, managing squad availability, and chasing player feedback — before they even step onto the training pitch. 
@@ -8,7 +10,7 @@ The platform consolidates core logistics while also using generative ai (Gemini 
 
 ## 🛠️ System Architecture & Data Flow:
 
-CoachAI is engineered as a three-tier, decoupled, real-time platform: 
+ElevenOps is engineered as a three-tier, decoupled, real-time platform: 
 
 ![System architecture picture](showcase/fyp-readme-architecture.png)
 
