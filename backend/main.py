@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import processor 
 
-# Load credentials
+# Load credentials from env file
 load_dotenv()
 url: str = os.environ.get("SUPABASE_URL") or ""
 key: str = os.environ.get("SUPABASE_KEY") or ""
@@ -13,7 +13,18 @@ if not url or not key:
 
 supabase: Client = create_client(url, key)
 
+
+
 def run_event_analysis(event_id: str, team_id: str):
+    """
+    This script is designed to be run as a standalone process, typically triggered by a cron job or
+    a serverless function. It processes a specific event's feedback, generates summaries, and updates the
+    team's overall and last 4 summaries in the database. 
+
+
+
+    The event_id and team_id should be provided as arguments when calling the run_event_analysis function.
+    """
     print(f"--- Processing Event: {event_id} ---")
     
     try:
