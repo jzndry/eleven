@@ -1,4 +1,4 @@
-# ElevenOps 
+# ElevenOps , previously CoachAI 
 
 Cross platform mobile application desgined for the QMUL Football Team coaches.
 
