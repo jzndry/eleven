@@ -25,8 +25,8 @@ Simplified Player Wellness & Feedback Inputs : Clear interface for logging physi
 
 AI-driven Questionnaire Analytics Pipeline : A python background pipeline is automated to run after a certain response count has be passed which 
 
---- 
+## How to run
 
-Unfortunately, this app is still in development so there are not released versions. 
+Unfortunately, this app is still in development so there are no released versions. 
 
 
