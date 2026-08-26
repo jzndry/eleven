@@ -5,19 +5,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-try:
-    client = genai.Client()
-    print("GenAI Client successfully initialised.")
-except Exception as e:
-    print(f"Failed to initialise GenAI client: {e}")
-    client = None
-
 # new client automatically looks for the GEMINI_API_KEY environment variable
 try:
     client = genai.Client()
+    print("GenAI client initialised successfully.")
 except Exception as e:
-    print(f"Failed to initialise GenAI client: {e}")
     client = None
+    raise RuntimeError(f"Failed to initialise GenAI client: {e}")
+    
 
 def generate_event_summary(responses):
     """Summarises a single training session or match using Gemini."""
