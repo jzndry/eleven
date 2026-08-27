@@ -11,10 +11,13 @@ import {
   Dimensions,
   Platform
 } from 'react-native'; 
-import { supabase } from '@/services/supabase';
+import { getCurrentUser } from '@/services/auth';
+import { getRoleAndTeam } from '@/services/profiles';
+import { createEvent } from '@/services/events';
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import type { EventType } from '@/types';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,7 +34,7 @@ export default function AddEventScreen() {
   });
 
   
-  const onDateChange = (event: any, selectedDate?: Date) => {
+  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     const currentDate = selectedDate || form.event_date;
     setShowPicker(Platform.OS === 'ios'); 
     setForm(prev => ({ ...prev, event_date: currentDate }));
@@ -52,23 +55,19 @@ export default function AddEventScreen() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('team_id')
-        .eq('id', user?.id)
-        .single();
+      const user = await getCurrentUser();
+      if (!user) throw new Error("No authenticated user found.");
+      const profile = await getRoleAndTeam(user.id);
 
       if (!profile?.team_id) throw new Error("No team found linked to your profile.");
 
-
-      const { error } = await supabase.from('events').insert([{ 
+      const { error } = await createEvent({
         team_id: profile.team_id,
-        event_type: form.event_type.toLowerCase(),
+        event_type: form.event_type.toLowerCase() as EventType,
         location: form.location.trim(),
         opponent: form.event_type === 'Match' ? form.opponent.trim() : null,
         event_date: form.event_date.toISOString()
-      }]);
+      });
 
       if (error) throw error;
       

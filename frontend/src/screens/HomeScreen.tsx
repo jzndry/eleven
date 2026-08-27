@@ -1,82 +1,56 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { supabase } from '@/services/supabase';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { getCurrentUser } from '@/services/auth';
+import { getRoleAndTeam, getTeamPlayerCount } from '@/services/profiles';
+import { getNextEvent } from '@/services/events';
+import { getEventAttendanceStatuses, getPlayerAttendanceStatus, summarizeAttendance } from '@/services/attendance';
+import type { Event, Role } from '@/types';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // State for Role and Team
-  const [userRole, setUserRole] = useState<'coach' | 'player' | null>(null);
+  const [userRole, setUserRole] = useState<Role | null>(null);
   const [teamSize, setTeamSize] = useState(0);
-  
+
   // State for Next Event
-  const [nextEvent, setNextEvent] = useState<any>(null);
+  const [nextEvent, setNextEvent] = useState<Event | null>(null);
   const [eventStats, setEventStats] = useState({ attending: 0, declined: 0, no_response: 0 });
   const [playerRSVP, setPlayerRSVP] = useState<string | null>(null);
 
   const fetchDashboardData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       // 1. Get User Profile & Role
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, team_id')
-        .eq('id', user.id)
-        .single();
-      
+      const profile = await getRoleAndTeam(user.id);
       if (!profile) return;
       setUserRole(profile.role);
 
       // 2. Get Squad Size (All players in that team)
-      const { count } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact' })
-        .eq('team_id', profile.team_id)
-        .eq('role', 'player');
-      setTeamSize(count || 0);
+      const count = await getTeamPlayerCount(profile.team_id || '');
+      setTeamSize(count);
 
       // 3. Get the NEXT single event (closest in the future)
-      const now = new Date().toISOString();
-      const { data: event } = await supabase
-        .from('events')
-        .select('*')
-        .eq('team_id', profile.team_id)
-        .gte('event_date', now)
-        .order('event_date', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      const event = await getNextEvent(profile.team_id || '');
 
       if (event) {
         setNextEvent(event);
-        
+
         if (profile.role === 'coach') {
           // Fetch coach-specific stats for the event
-          const { data: attData } = await supabase
-            .from('event_attendance')
-            .select('status')
-            .eq('event_id', event.id);
-          
-          let att = 0; let dec = 0;
-          attData?.forEach(r => { 
-            if(r.status === 'attending') att++; 
-            if(r.status === 'declined') dec++; 
-          });
-          setEventStats({ attending: att, declined: dec, no_response: (count || 0) - (att + dec) });
+          const attData = await getEventAttendanceStatuses(event.id);
+          const { attending, declined, no_response } = summarizeAttendance(attData, count);
+          setEventStats({ attending, declined, no_response });
         } else {
           // Check if this specific player has RSVP'd
-          const { data: rsvp } = await supabase
-            .from('event_attendance')
-            .select('status')
-            .eq('event_id', event.id)
-            .eq('player_id', user.id)
-            .maybeSingle();
-          setPlayerRSVP(rsvp?.status || null);
+          const rsvp = await getPlayerAttendanceStatus(event.id, user.id);
+          setPlayerRSVP(rsvp);
         }
       } else {
         setNextEvent(null);
@@ -110,7 +84,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       className="flex-1 bg-slate-50"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
@@ -123,9 +97,9 @@ export default function HomeScreen() {
 
         {/* Next Event Section */}
         <Text className="text-slate-400 font-bold text-xs uppercase tracking-widest ml-1 mb-3">Upcoming Event</Text>
-        
+
         {nextEvent ? (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => router.push(`/(tabs)/event-review/${nextEvent.id}`)}
             activeOpacity={0.8}
             className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-8"
@@ -142,7 +116,7 @@ export default function HomeScreen() {
             <Text className="text-2xl font-bold text-slate-900 mb-1">
               {nextEvent.event_type === 'match' ? `Match vs ${nextEvent.opponent || 'TBC'}` : 'Training Session'}
             </Text>
-            
+
             <View className="flex-row items-center mb-6">
               <SymbolView name="calendar" size={14} tintColor="#64748b" />
               <Text className="text-slate-500 ml-1 mr-4">{new Date(nextEvent.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</Text>
@@ -169,10 +143,10 @@ export default function HomeScreen() {
                 </View>
               ) : (
                 <View className="flex-row items-center justify-center py-1">
-                  <SymbolView 
-                    name={playerRSVP ? "checkmark.circle.fill" : "exclamationmark.circle.fill"} 
-                    size={18} 
-                    tintColor={playerRSVP ? "#15803d" : "#b45309"} 
+                  <SymbolView
+                    name={playerRSVP ? "checkmark.circle.fill" : "exclamationmark.circle.fill"}
+                    size={18}
+                    tintColor={playerRSVP ? "#15803d" : "#b45309"}
                   />
                   <Text className={`ml-2 font-bold ${playerRSVP ? 'text-green-700' : 'text-amber-700'}`}>
                     {playerRSVP ? `You've responded: ${playerRSVP}` : "Action required: Submit your attendance"}

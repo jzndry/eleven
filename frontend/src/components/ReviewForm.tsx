@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { supabase } from '@/services/supabase';
+import { getCurrentUser } from '@/services/auth';
+import { getPlayerQuestionnaire, submitQuestionnaire } from '@/services/questionnaires';
 
 interface ReviewFormProps {
   eventId: string;
@@ -26,18 +27,11 @@ export const ReviewForm = ({ eventId, onSuccess }: ReviewFormProps) => {
 
   const checkExistingReview = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       // Checking if a questionnaire already exists for this player and event
-      const { data, error } = await supabase
-        .from('questionnaires')
-        .select('*')
-        .eq('event_id', eventId)
-        .eq('player_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
+      const data = await getPlayerQuestionnaire(eventId, user.id);
 
       // If data is returned, fill in the form and lock it
       if (data) {
@@ -61,10 +55,10 @@ export const ReviewForm = ({ eventId, onSuccess }: ReviewFormProps) => {
     
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error("Auth error");
 
-      const { error } = await supabase.from('questionnaires').insert({
+      const { error } = await submitQuestionnaire({
         event_id: eventId,
         player_id: user.id,
         team_performance_rating: form.team_performance_rating,

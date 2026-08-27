@@ -3,17 +3,20 @@ import {
   View, Text, FlatList, Pressable, 
   ActivityIndicator, StyleSheet, TouchableOpacity, Alert
 } from 'react-native';
-import { supabase } from '@/services/supabase';
+import { getCurrentUser } from '@/services/auth';
+import { getRoleAndTeam } from '@/services/profiles';
+import { getTeamEvents } from '@/services/events';
 import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
+import type { Event, Role } from '@/types';
 
 export default function ScheduleScreen() {
   const router = useRouter();
   const {refresh} = useLocalSearchParams();  // Listen for refresh param to trigger data reload when coming back from add/edit screens
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<Role | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -29,25 +32,16 @@ export default function ScheduleScreen() {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('team_id, role')
-        .eq('id', user.id)
-        .maybeSingle();
+      const profile = await getRoleAndTeam(user.id);
 
       if (profile) {
         setUserRole(profile.role);
         if (profile.team_id) {
-          const { data, error } = await supabase
-            .from('events')
-            .select('*')
-            .eq('team_id', profile.team_id)
-            .order('event_date', { ascending: true });
-          
-          if (!error) setEvents(data || []);
+          const data = await getTeamEvents(profile.team_id);
+          setEvents(data);
         }
       }
     } catch (err) {
@@ -73,7 +67,7 @@ export default function ScheduleScreen() {
     }
   }, [events, activeTab]);
 
-  const renderEvent = ({ item }: { item: any }) => (
+  const renderEvent = ({ item }: { item: Event }) => (
     <TouchableOpacity 
       onPress={() => router.push(`/(tabs)/event-review/${item.id}`)}
       activeOpacity={0.8}
