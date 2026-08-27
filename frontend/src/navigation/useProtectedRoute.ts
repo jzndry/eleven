@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '@/services/supabase';
+import { getSession, onAuthStateChange } from '@/services/auth';
+import { getOnboardingStatus } from '@/services/profiles';
 
 /**
  * Tracks the Supabase auth session and redirects the user to the
@@ -18,13 +19,13 @@ export function useProtectedRoute() {
 
   useEffect(() => {
     // Check session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    getSession().then(({ data: { session } }) => {
       setSession(session);
       setInitialized(true);
     });
 
     // Listen for auth changes (login/logout)
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
@@ -48,13 +49,7 @@ export function useProtectedRoute() {
       } else {
         // 2. If logged in, we check the database for onboarding status
         try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('onboarding_complete')
-            .eq('id', session.user.id)
-            .single();
-
-          if (error) throw error;
+          const profile = await getOnboardingStatus(session.user.id);
 
           if (profile && !profile.onboarding_complete) {
             // User needs to finish setup

@@ -10,7 +10,9 @@ import {
   Platform,
   ScrollView
 } from 'react-native';
-import { supabase } from '@/services/supabase';
+import { getCurrentUser } from '@/services/auth';
+import { completeOnboarding } from '@/services/profiles';
+import { createTeam } from '@/services/teams';
 import { useRouter } from 'expo-router';
 
 
@@ -25,7 +27,7 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     async function fetchUserRole() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       // Role was set in user_metadata during the sign-up process
       setRole(user?.user_metadata?.role || 'player');
     }
@@ -48,19 +50,14 @@ export default function OnboardingScreen() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error("User session not found.");
 
       // Update Profile table with name, onboarding status
-      
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          full_name: fullName.trim(), 
-          position: role === 'player' ? position.trim() : null,  // Update position too if player
-          onboarding_complete: true 
-        })
-        .eq('id', user.id);
+      const { error: profileError } = await completeOnboarding(user.id, {
+        full_name: fullName.trim(),
+        position: role === 'player' ? position.trim() : null, // Update position too if player
+      });
 
         // If there's an error updating the profile, should not proceed to create a team or navigate to the app
       if (profileError) throw profileError;
@@ -70,14 +67,12 @@ export default function OnboardingScreen() {
         // Generating a unique join code (e.g., 6 characters)
         const generatedJoinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const { error: teamError } = await supabase
-          .from('teams')
-          .insert([{ 
-            team_name: teamName.trim(), 
-            coach_id: user.id,
-            join_code: generatedJoinCode 
-          }]);
-        
+        const { error: teamError } = await createTeam({
+          team_name: teamName.trim(),
+          coach_id: user.id,
+          join_code: generatedJoinCode,
+        });
+
         if (teamError) throw teamError;
       }
 

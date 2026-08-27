@@ -3,7 +3,9 @@ import {
   View, Text, ScrollView, TouchableOpacity, 
   TextInput, Alert, ActivityIndicator 
 } from 'react-native';
-import { supabase } from '@/services/supabase';
+import { getCurrentUser, signOut, updateEmail } from '@/services/auth';
+import { deleteProfile, getSettingsProfile, updateProfileField } from '@/services/profiles';
+import { getTeamByCoachId, getTeamById, updateTeamField } from '@/services/teams';
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -22,33 +24,20 @@ export default function SettingsScreen() {
   async function fetchInitialData() {
     setLoading(true);
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) return;
+      const user = await getCurrentUser();
+      if (!user) return;
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name, role, position, team_id')
-        .eq('id', user.id)
-        .maybeSingle();
+      const profileData = await getSettingsProfile(user.id);
 
       if (profileData) {
-        setProfile({ ...profileData, email: user.email || '' });
+        setProfile({ ...profileData, position: profileData.position || '', email: user.email || '' });
       }
 
       if (profileData?.role === 'coach') {
-        let { data: teamData } = await supabase
-          .from('teams')
-          .select('id, team_name, home_ground_address, training_ground_address, join_code') // ADDED join_code
-          .eq('coach_id', user.id)
-          .maybeSingle();
+        let teamData = await getTeamByCoachId(user.id);
 
         if (!teamData && profileData.team_id) {
-          const { data: fallbackTeam } = await supabase
-            .from('teams')
-            .select('id, team_name, home_ground_address, training_ground_address, join_code') // ADDED join_code
-            .eq('id', profileData.team_id)
-            .maybeSingle();
-          teamData = fallbackTeam;
+          teamData = await getTeamById(profileData.team_id);
         }
 
         if (teamData) {
@@ -78,13 +67,13 @@ export default function SettingsScreen() {
     if (!tempValue.trim()) return setEditingField(null);
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
 
       if (fieldName === 'email') {
-        const { error } = await supabase.auth.updateUser({ email: tempValue.trim() });
+        const { error } = await updateEmail(tempValue.trim());
         if (error) throw error;
         Alert.alert("Confirm Email", "Check both your old and new emails to finalise changes.");
-      } 
+      }
       else if (fieldName === 'team_name' || fieldName === 'home_address' || fieldName === 'training_address') {
         if (!team.id) {
           throw new Error("Team ID is missing. Please ensure your team was created correctly.");
@@ -94,22 +83,16 @@ export default function SettingsScreen() {
         if (fieldName === 'home_address') dbField = 'home_ground_address';
         if (fieldName === 'training_address') dbField = 'training_ground_address';
 
-        const { error } = await supabase
-          .from('teams')
-          .update({ [dbField]: tempValue.trim() })
-          .eq('id', team.id);
-        
+        const { error } = await updateTeamField(team.id, dbField, tempValue.trim());
+
         if (error) throw error;
-        
+
         if (fieldName === 'team_name') setTeam(prev => ({ ...prev, name: tempValue.trim() }));
         else setTeam(prev => ({ ...prev, [fieldName]: tempValue.trim() }));
-      } 
+      }
       else {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ [fieldName]: tempValue.trim() })
-          .eq('id', user?.id);
-        
+        const { error } = await updateProfileField(user?.id || '', fieldName, tempValue.trim());
+
         if (error) throw error;
         setProfile(prev => ({ ...prev, [fieldName]: tempValue.trim() }));
       }
@@ -122,16 +105,16 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.replace('/(auth)/login');
   };
 
   const handleDeleteAccount = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
-      const { error } = await supabase.from('profiles').delete().eq('id', user.id);
+      const { error } = await deleteProfile(user.id);
       if (error) throw error;
       Alert.alert("Account Deleted", "Your data has been successfully removed.");
       handleSignOut();

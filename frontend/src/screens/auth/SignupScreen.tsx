@@ -11,7 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { supabase } from '@/services/supabase';
+import { signUpWithEmail as signUpUser } from '@/services/auth';
+import { findTeamByJoinCode } from '@/services/teams';
 import { useRouter } from 'expo-router';
 
 export default function SignUpScreen() {
@@ -52,14 +53,8 @@ export default function SignUpScreen() {
       // Verify the join code and get the team ID before signing up
       if (role === 'player') {
         const cleanCode = joinCode.trim().toUpperCase();
-        const { data: teamData, error: teamQueryError } = await supabase
-          .from('teams')
-          .select('id')
-          .eq('join_code', cleanCode)
-          .maybeSingle();
+        const teamData = await findTeamByJoinCode(cleanCode);
 
-        if (teamQueryError) throw teamQueryError;
-        
         if (!teamData) {
           setLoading(false);
           return Alert.alert("Invalid Code", "We could not find a squad with that join code. Please verify it with your coach.");
@@ -69,16 +64,10 @@ export default function SignUpScreen() {
       }
 
       // Proceed with signup, passing the resolved UUID directly to metadata
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password: password,
-        options: {
-          data: {
-            role: role,
-            // We save the actual team_id so the database trigger can process it seamlessly
-            ...(assignedTeamId ? { team_id: assignedTeamId } : {}),
-          },
-        },
+      const { error } = await signUpUser(email.trim(), password, {
+        role: role,
+        // We save the actual team_id so the database trigger can process it seamlessly
+        ...(assignedTeamId ? { team_id: assignedTeamId } : {}),
       });
 
       if (error) {

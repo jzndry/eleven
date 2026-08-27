@@ -1,11 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { supabase } from '@/services/supabase';
+import { getCurrentUser } from '@/services/auth';
+import { getRoleAndTeam, getTeamPlayers } from '@/services/profiles';
+import { getTeamName } from '@/services/teams';
 import { SymbolView } from 'expo-symbols';
 import { useRouter, useFocusEffect } from 'expo-router';
+import type { Profile } from '@/types';
 
 export default function TeamScreen() {
-  const [players, setPlayers] = useState<any[]>([]);
+  const [players, setPlayers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState<string>('Your Squad');
   const router = useRouter();
@@ -13,32 +16,17 @@ export default function TeamScreen() {
   const fetchSquad = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('team_id')
-        .eq('id', user.id)
-        .single();
+      const profile = await getRoleAndTeam(user.id);
 
       if (profile?.team_id) {
-        const { data: teamData } = await supabase
-          .from('teams')
-          .select('team_name')
-          .eq('id', profile.team_id)
-          .single();
-        
-        if (teamData) setTeamName(teamData.team_name);
+        const name = await getTeamName(profile.team_id);
+        if (name) setTeamName(name);
 
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('team_id', profile.team_id)
-          .eq('role', 'player')
-          .order('full_name');
-
-        if (!error) setPlayers(data || []);
+        const data = await getTeamPlayers(profile.team_id);
+        setPlayers(data);
       }
     } catch (err) {
       console.error("Error fetching squad:", err);

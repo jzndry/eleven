@@ -1,43 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { supabase } from '@/services/supabase';
 import { SymbolView } from 'expo-symbols';
+import { getCurrentUser } from '@/services/auth';
+import { getProfileById, getRoleAndTeam, removePlayerFromTeam } from '@/services/profiles';
+import type { Profile, Role } from '@/types';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams();
+  const playerId = typeof id === 'string' ? id : id[0];
   const router = useRouter();
-  const [player, setPlayer] = useState<any>(null);
+  const [player, setPlayer] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentUserRole, setCurrentUserRole] = useState<'coach' | 'player' | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<Role | null>(null);
 
   useEffect(() => {
     fetchInitialData();
-  }, [id]);
+  }, [playerId]);
 
   const fetchInitialData = async () => {
     setLoading(true);
     try {
       // 1. Get the current logged-in user's role
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (user) {
-        const { data: viewerProfile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        
-        if (viewerProfile) setCurrentUserRole(viewerProfile.role as 'coach' | 'player');
+        const viewerProfile = await getRoleAndTeam(user.id);
+        if (viewerProfile) setCurrentUserRole(viewerProfile.role);
       }
 
       // 2. Get the details of the player profile being viewed
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) throw error;
+      const data = await getProfileById(playerId);
       setPlayer(data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -60,11 +52,8 @@ export default function PlayerDetailScreen() {
             try {
               // We set team_id to null instead of deleting the profile entirely
               // Need to add some fix to a hanging player profile if we want to re-add them to a team in the future
-              const { error } = await supabase
-                .from('profiles')
-                .update({ team_id: null })
-                .eq('id', id);
-              
+              const { error } = await removePlayerFromTeam(playerId);
+
               if (error) throw error;
               
               Alert.alert("Success", "Player removed from the team.");
