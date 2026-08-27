@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/services/supabase';
 
 interface ReviewFormProps {
   eventId: string;
