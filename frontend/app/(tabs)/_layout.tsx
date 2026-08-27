@@ -2,9 +2,9 @@ import React from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import Colors from '@/styles/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useClientOnlyValue } from '@/hooks/useClientOnlyValue';
 
 function TabLayout() {
   const colorScheme = useColorScheme();
