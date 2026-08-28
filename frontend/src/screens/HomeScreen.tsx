@@ -100,7 +100,7 @@ export default function HomeScreen() {
 
         {nextEvent ? (
           <TouchableOpacity
-            onPress={() => router.push(`/(tabs)/event-review/${nextEvent.id}`)}
+            onPress={() => router.push(`/(tabs)/events/${nextEvent.id}`)}
             activeOpacity={0.8}
             className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-8"
           >

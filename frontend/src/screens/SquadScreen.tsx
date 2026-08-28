@@ -7,7 +7,7 @@ import { SymbolView } from 'expo-symbols';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { Profile } from '@/types';
 
-export default function TeamScreen() {
+export default function SquadScreen() {
   const [players, setPlayers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState<string>('Your Squad');

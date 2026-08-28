@@ -49,9 +49,9 @@ function TabLayout() {
         }}
       />
 
-      {/* Hidden Event Review Route */}
+      {/* Hidden Event Hub Route (attendance + post-event review, keyed by event id) */}
       <Tabs.Screen
-        name="event-review/[id]"
+        name="events/[id]"
         options={{
           href: null, // Keeps the bars but hides the icon
           title: 'AI Analysis',
