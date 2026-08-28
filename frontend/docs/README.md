@@ -11,7 +11,7 @@ The reasoning behind the two big structural decisions here is written up in full
 ```
 app/                      Expo Router route table — ONLY routing, nothing else
   (auth)/                 login, signup, onboarding routes
-  (tabs)/                 home, schedule, squad, settings, event-review/[id], player/[id]
+  (tabs)/                 home, schedule, squad, settings, events/[id], player/[id]
   _layout.tsx             root layout: renders the Stack, gated by useProtectedRoute()
   add-event.tsx           modal route
   index.tsx, +html.tsx, +not-found.tsx   framework-required special files
