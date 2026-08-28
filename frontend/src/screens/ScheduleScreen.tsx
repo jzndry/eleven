@@ -69,7 +69,7 @@ export default function ScheduleScreen() {
 
   const renderEvent = ({ item }: { item: Event }) => (
     <TouchableOpacity 
-      onPress={() => router.push(`/(tabs)/event-review/${item.id}`)}
+      onPress={() => router.push(`/(tabs)/events/${item.id}`)}
       activeOpacity={0.8}
       className="bg-white p-5 mb-4 rounded-3xl shadow-sm border border-slate-100"
     >
