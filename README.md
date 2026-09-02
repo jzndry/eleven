@@ -1,6 +1,6 @@
-# ElevenOps (named CoachAI in my FYP)
+# ElevenOps
 
-Cross platform mobile application desgined for the QMUL Football Team coaches.
+Cross platform mobile application desgined for the QMUL Football Team coaches. Previously named CoachAI
 
 ## 📌 Reason Behind This Project:
 
