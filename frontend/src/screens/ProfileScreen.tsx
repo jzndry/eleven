@@ -9,6 +9,7 @@ import { getTeamByCoachId, getTeamById, updateTeamField } from '@/services/teams
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import ProfileHeader from '@/components/ProfileHeader';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -18,8 +19,12 @@ export default function SettingsScreen() {
   const [profile, setProfile] = useState({ full_name: '', role: '', position: '', email: '' });
   const [team, setTeam] = useState({ id: '', name: '', home_address: '', training_address: '', join_code: '' });
   const [tempValue, setTempValue] = useState('');
+  const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => { fetchInitialData(); }, []);
+  if (!initialized) {
+    fetchInitialData();
+    setInitialized(true);
+  }
 
   async function fetchInitialData() {
     setLoading(true);
@@ -179,14 +184,11 @@ export default function SettingsScreen() {
   return (
     <ScrollView className="flex-1 bg-slate-50 p-6">
       
-      <TouchableOpacity onPress={handleSignOut} className="bg-white p-5 rounded-3xl mb-8 border border-slate-100 shadow-sm flex-row justify-center items-center">
-        <SymbolView name="rectangle.portrait.and.arrow.right" size={18} tintColor="#64748b" />
-        <Text className="ml-2 font-bold text-slate-700">Sign Out</Text>
-      </TouchableOpacity>
+
 
       {profile.role === 'coach' && (
         <View className="mb-8">
-          <Text className="text-slate-400 font-bold mb-4 uppercase text-xs tracking-widest">Team Management</Text>
+          {/* I need to add a profile header here */}
           <View className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
              <SettingRow label="Team Name" value={team.name} fieldName="team_name" /> 
              <SettingRow label="Home Ground" value={team.home_address} fieldName="home_address" /> 

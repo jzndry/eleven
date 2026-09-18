@@ -25,7 +25,7 @@ export default function LoginScreen() {
     } else {
       // Success navigation is usually handled by an Auth Provider listener, 
       // but you can force it here if needed:
-      router.replace('/(tabs)/schedule');
+      router.replace('/(tabs)/home');
       console.log("Login successful for:", targetEmail);
     }
     setLoading(false);
