@@ -21,14 +21,16 @@ export default function PlayerDetailScreen() {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      // 1. Get the current logged-in user's role
+      // Get the current logged-in user's role
       const user = await getCurrentUser();
       if (user) {
         const viewerProfile = await getRoleAndTeam(user.id);
         if (viewerProfile) setCurrentUserRole(viewerProfile.role);
       }
-
-      // 2. Get the details of the player profile being viewed
+      else {
+        console.error("No user is currently logged in, unable to fetch role and team information.");
+      }
+      // Get the details of the player profile being viewed
       const data = await getProfileById(playerId);
       setPlayer(data);
     } catch (error) {
@@ -39,6 +41,7 @@ export default function PlayerDetailScreen() {
   };
 
   const handleRemovePlayer = async () => {
+    console.log("Attempting to remove player with ID:", playerId);
     Alert.alert(
       "Remove Player",
       `Are you sure you want to remove ${player?.full_name} from the squad?`,
@@ -50,7 +53,6 @@ export default function PlayerDetailScreen() {
           onPress: async () => {
             setLoading(true);
             try {
-              // We set team_id to null instead of deleting the profile entirely
               // Need to add some fix to a hanging player profile if we want to re-add them to a team in the future
               const { error } = await removePlayerFromTeam(playerId);
 

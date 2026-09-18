@@ -42,12 +42,12 @@ export function useProtectedRoute() {
 
     const checkNavigation = async () => {
       if (!session) {
-        // 1. If not logged in and not in auth screens, force login
+        // If not logged in and not in auth screens, force login
         if (!inAuthGroup) {
           router.replace('/(auth)/login');
         }
       } else {
-        // 2. If logged in, we check the database for onboarding status
+        // If logged in, we check the database for onboarding status
         try {
           const profile = await getOnboardingStatus(session.user.id);
 
@@ -57,7 +57,7 @@ export function useProtectedRoute() {
               router.replace('/(auth)/onboarding');
             }
           } else {
-            // 3. User is finished. Redirect to tabs if they are at the root or auth pages
+            // If user is finished onboarding, redirect to tabs if they are at the root or auth pages
             if (inAuthGroup || isOnboarding || isAtRoot) {
               router.replace('/(tabs)/home');
             }
